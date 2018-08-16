@@ -1,0 +1,397 @@
+---
+title: "meas_report_month_CreateDatasets"
+author: "Robesyn"
+date: "5 January 2018"
+output: html_document
+---
+
+```{r}
+library(knitr)
+library(rmarkdown)
+library(anytime)
+library(tidyverse)
+library(lubridate)
+library(stringr)
+```
+
+```{r}
+meas <- read_csv("../2 data/1 raw data/export_20180726/2018-07-26_WHO_TESSyExport_Measles_case_based_data.csv")   
+```
+
+```{r}
+glimpse(meas)        # includes discarded
+```
+
+```{r}
+meas <- meas %>% select(
+                              "NationalIdentifier",              
+                              "ReportingCountry"   ,          
+                              "DateUsedForStatisticsISO"  ,   
+                              "DateUsedForStatisticsYear"  ,  
+                              "DateUsedForStatisticsMonth",
+                              #"DateOfOnsetISOdate",
+                              "DateOfOnsetYear",
+                              #"DateOfOnsetMonth",
+                              "PlaceOfNotification",
+                              "PlaceOfResidence",
+                              "Age",
+                              "AgeMonth",
+                              "Gender",
+                              "Classification",
+                              "ClinicalCriteria",
+                              "LaboratoryResult",
+                              "EpiLinked",
+                              "VaccStatus",
+                              "Hospitalisation",
+                              "Complications",
+                              "Outcome",
+                              "CauseOfDeathText",
+                              "Imported",
+                              "ProbableCountryOfInfection",
+                              "ClusterSetting",
+                              "ClusterIdentification",
+                              "ResultIgM",                    
+                              "ResultIgG",
+                              "SpecimenSero",
+                              "ResultVirDetect",
+                              "SpecimenVirDetect", 
+                              "Genotype",
+                              "isNotification",
+                              "isLaboratory"
+                              )
+```
+
+```{r}
+names(meas) <- tolower(names(meas))  
+```
+
+# Labelling unknown as missing
+```{r}
+meas$gender[meas$gender == "UNK"] <- NA
+meas$outcome[meas$outcome == "UNK"] <- NA
+meas$hospitalisation[meas$hospitalisation == "UNK"] <- NA  
+meas$complications[meas$complications == "UNK"] <- NA  
+# meas$classification[meas$classification == "UNK"] <- NA    # classification not made NA here, to avoid these rows get dropped by filter furter  
+meas$vaccstatus[meas$vaccstatus == "UNK"] <- NA  
+meas$imported[meas$imported == "UNK"] <- NA  
+meas$clustersetting[meas$clustersetting == "UNK"] <- NA 
+```
+
+########################################
+# replace countrycodes by countrynames #
+########################################
+
+```{r replace countrycodes by countrynames}
+geocodes <- read_csv("../2 data/3 emma geocodes/geocodes.csv")
+(geocodes <- geocodes %>% select(GEO_NAME, GEO_ID, C_16))   # 38999 rows, first 255 are countrycodes
+```
+
+```{r}
+geocodes <- geocodes %>% filter(C_16==".All countries") %>% select(-C_16)
+(geocodes <- rename(geocodes, geoname=GEO_NAME, geoid=GEO_ID))
+```
+
+```{r}
+# create same varname as in case dataset to allow left_join
+geocodes <- geocodes %>% mutate("reportingcountry"=geoid)
+(geocodes_reportingcountry <- geocodes %>% select(geoname, reportingcountry))
+```
+
+````{r}
+# left_join
+meas <- left_join(meas, geocodes_reportingcountry, by="reportingcountry")
+meas <- rename(meas, reportingcountryname=geoname)
+meas %>% select(reportingcountry, reportingcountryname)
+sum(is.na(meas$reportingcountryname))
+```
+
+```{r}
+# overwrite original countrycodes with countrynames, and delete temporary vars
+meas$reportingcountry <- meas$reportingcountryname
+(meas <- select(meas, -reportingcountryname))
+```
+
+################
+# set datatype #
+################
+
+```{r}
+meas$reportingcountry <- as.factor(meas$reportingcountry)
+meas$outcome <- as.factor(meas$outcome)
+
+meas$dateusedforstatisticsiso <- as_date(meas$dateusedforstatisticsiso)
+
+meas$placeofnotification  <- as.factor(meas$placeofnotification)
+meas$placeofresidence  <- as.factor(meas$placeofresidence)
+meas$gender <- as.factor(meas$gender)
+meas$classification <- as.factor(meas$classification)
+meas$clinicalcriteria <- as.factor(meas$clinicalcriteria)
+meas$laboratoryresult <- as.factor(meas$laboratoryresult)
+meas$epilinked <- as.factor(meas$epilinked)
+meas$hospitalisation <- as.factor(meas$hospitalisation)
+meas$vaccstatus <- as.factor(meas$vaccstatus)
+meas$complications <- as.factor(meas$complications)
+meas$outcome <- as.factor(meas$outcome)
+meas$causeofdeathtext <- as.factor(meas$causeofdeathtext)
+meas$imported <- as.factor(meas$imported)
+meas$probablecountryofinfection <- as.factor(meas$probablecountryofinfection)
+meas$clustersetting <- as.factor(meas$clustersetting)
+meas$clusteridentification <- as.factor(meas$clusteridentification)
+meas$clusteridentification <- as.factor(meas$clusteridentification)
+meas$resultigm  <- as.factor(meas$resultigm)
+meas$resultigg  <- as.factor(meas$resultigg)
+meas$specimensero  <- as.factor(meas$specimensero)
+meas$resultvirdetect <- as.factor(meas$resultvirdetect)
+meas$specimenvirdetect  <- as.factor(meas$specimenvirdetect )
+meas$genotype <- as.factor(meas$genotype)
+meas$isnotification <- as.factor(meas$isnotification)
+meas$islaboratory <- as.factor(meas$islaboratory)
+```
+
+# Exclude incompletely reported months
+```{r}
+meas <- meas %>% filter(!(reportingcountry == "Czech Republic" & dateusedforstatisticsyear == 2018  & dateusedforstatisticsmonth == 5)) 
+```
+
+# setting report period
+```{r}
+# Adapt code to avoid problem in month January (report in January about data November)
+# today()
+
+# thisyear <- year(today())
+# lastyear <- thisyear - 1
+
+# thismonth <- month(today())
+# lastmonth <- thismonth - 1  #  to be split in months 2 to 12 and month 1
+
+# thisyear
+# thismonth
+# lastyear
+# lastmonth
+
+# EASIER set explicit year and month
+yearofreport <- 2018
+monthofreport <- 6  # month of cases we report about (not month that report is made)
+```
+
+# DATASET 1: month
+```{r}
+# discarded
+(meas_month_discarded <- meas %>% filter(dateusedforstatisticsyear == yearofreport & dateusedforstatisticsmonth == monthofreport & classification == "DISCARDED") )  
+
+# not discarded
+(meas_month_notdiscarded <- meas %>% filter(dateusedforstatisticsyear == yearofreport & dateusedforstatisticsmonth == monthofreport & classification != "DISCARDED")  )   
+meas_month_notdiscarded 
+```
+
+# DATASET 2: last 12 months
+```{r}
+# discarded
+meas_last12months_discarded <- meas %>% filter(
+               (dateusedforstatisticsyear == yearofreport-1 & dateusedforstatisticsmonth > monthofreport & classification == "DISCARDED") |
+               (dateusedforstatisticsyear == yearofreport & dateusedforstatisticsmonth <= monthofreport & classification == "DISCARDED"))  
+meas_last12months_discarded     
+
+# not discarded
+meas_last12months_notdiscarded <- meas %>% filter(
+               (dateusedforstatisticsyear == yearofreport-1 & dateusedforstatisticsmonth > monthofreport & classification != "DISCARDED") |
+               (dateusedforstatisticsyear == yearofreport & dateusedforstatisticsmonth <= monthofreport & classification != "DISCARDED"))  
+meas_last12months_notdiscarded    
+```
+
+# DATASET 3: cases calendaryear 2018
+```{r}
+# discarded
+meas_calendaryear_discarded <- meas %>% filter(dateusedforstatisticsyear == yearofreport & classification == "DISCARDED")  
+meas_calendaryear_discarded
+
+# not discarded
+meas_calendaryear_notdiscarded <- meas %>% filter(dateusedforstatisticsyear == yearofreport & classification != "DISCARDED") 
+meas_calendaryear_notdiscarded
+```
+
+# DATASET 4 (4a, 4b, 4c): aggregated data 
+Rows are case counts, not individual cases  -->  sum cases instead of count rows (variable 'numberofcases')
+
+# read
+```{r}
+measagg <- read_csv("../2 data/1 raw data/export_20180726/2018-07-26_WHO_TESSyExport_Measles_vaggregated_data.csv")
+names(measagg) <- tolower(names(measagg))  
+```
+
+```{r}
+(measagg <- measagg %>% select(numberofcases, classification, dateusedforstatisticsyear, dateusedforstatisticsmonth, everything())  )
+glimpse(measagg)  # cave incl discarded
+```
+
+# Labelling unknown as missing
+```{r}
+measagg$gender[measagg$gender == "UNK"] <- NA
+measagg$vaccstatus[measagg$vaccstatus == "UNK"] <- NA  
+```
+
+```{r}
+measagg <- measagg %>% mutate(reportingcountry = ifelse(reportingcountry == "BE", "Belgium", "Country to check"))
+```
+
+```{r}
+table(measagg$reportingcountry)
+table(measagg$classification)   # cave are rows of aggregated data, not cases! (see variable numberofcases)
+```
+
+## DATASET 4a: month agg 
+```{r}
+# discarded
+(meas_agg_month_discarded <- measagg %>% filter(dateusedforstatisticsyear == yearofreport & dateusedforstatisticsmonth == monthofreport & classification == "DISCARDED") )
+
+# not discarded
+(meas_agg_month_notdiscarded <- measagg %>% filter(dateusedforstatisticsyear == yearofreport & dateusedforstatisticsmonth == monthofreport & classification != "DISCARDED") )
+```
+
+## DATASET 4b: last 12 months agg
+```{r}
+# discarded
+(meas_agg_last12months_discarded <- measagg %>% filter(
+               (dateusedforstatisticsyear == yearofreport-1 & dateusedforstatisticsmonth > monthofreport & classification == "DISCARDED") |
+               (dateusedforstatisticsyear == yearofreport & dateusedforstatisticsmonth <= monthofreport & classification == "DISCARDED"))  )
+
+# not discarded
+(meas_agg_last12months_notdiscarded <- measagg %>% filter(
+               (dateusedforstatisticsyear == yearofreport-1 & dateusedforstatisticsmonth > monthofreport & classification != "DISCARDED") |
+               (dateusedforstatisticsyear == yearofreport & dateusedforstatisticsmonth <= monthofreport & classification != "DISCARDED"))  )
+```
+
+## DATASET 4c: cases 2018 agg
+```{r}
+# discarded
+(meas_agg_calendaryear_discarded <- measagg %>% filter(dateusedforstatisticsyear == yearofreport & classification == "DISCARDED")  )
+
+# not discarded
+(meas_agg_calendaryear_notdiscarded <- measagg %>% filter(dateusedforstatisticsyear == yearofreport & classification != "DISCARDED")  )
+```
+
+# DATASET 5: Combined dataset (join case based and agg)
+
+1/ uncount() agg
+```{r}
+meas_agg_month_notdiscarded 
+meas_agg_month_notdiscarded %>% summarize(total = sum(numberofcases))
+
+(meas_disaggregated_month_notdiscarded <- meas_agg_month_notdiscarded %>% uncount(numberofcases, .id = "id_rank_from_agg") %>% select(id_rank_from_agg, everything())  )  
+(meas_disaggregated_last12months_notdiscarded <- meas_agg_last12months_notdiscarded %>% uncount(numberofcases, .id = "id_rank_from_agg") %>% select(id_rank_from_agg, everything())  )
+(meas_disaggregated_calendaryear_notdiscarded <- meas_agg_calendaryear_notdiscarded %>% uncount(numberofcases, .id = "id_rank_from_agg") %>% select(id_rank_from_agg, everything())  )
+```
+
+2/ prepare data class for join
+```{r}
+# fix incompatibilities to allow join
+glimpse(meas_agg_month_notdiscarded)
+
+meas_disaggregated_month_notdiscarded$dateusedforstatisticsiso <- anydate(meas_disaggregated_month_notdiscarded$dateusedforstatisticsiso)
+meas_disaggregated_month_notdiscarded$isnotification <- as.factor(meas_disaggregated_month_notdiscarded$isnotification)
+
+meas_disaggregated_last12months_notdiscarded$dateusedforstatisticsiso <- anydate(meas_disaggregated_last12months_notdiscarded$dateusedforstatisticsiso)
+meas_disaggregated_last12months_notdiscarded$isnotification <- as.factor(meas_disaggregated_last12months_notdiscarded$isnotification)
+
+meas_disaggregated_calendaryear_notdiscarded$dateusedforstatisticsiso <- anydate(meas_disaggregated_calendaryear_notdiscarded$dateusedforstatisticsiso)
+meas_disaggregated_calendaryear_notdiscarded$isnotification <- as.factor(meas_disaggregated_calendaryear_notdiscarded$isnotification)
+
+glimpse(meas_disaggregated_month_notdiscarded) 
+```
+
+3/ full_join()
+```{r}
+meas_combined_month_notdiscarded <- full_join(meas_month_notdiscarded, meas_disaggregated_month_notdiscarded)
+meas_combined_last12months_notdiscarded <- full_join(meas_last12months_notdiscarded, meas_disaggregated_last12months_notdiscarded)
+meas_combined_calendaryear_notdiscarded <- full_join(meas_calendaryear_notdiscarded, meas_disaggregated_calendaryear_notdiscarded) 
+```
+
+# Save working files
+
+Discarded 
+```{r} 
+# month
+csvFileName <- paste("../2 data/2 processed data/discarded/meas_month_discarded", yearofreport, monthofreport, ".csv",sep="_")  
+write_csv(meas_month_discarded,csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/discarded/meas_month_discarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_month_discarded,rdsFileName)
+
+csvFileName <- paste("../2 data/2 processed data/discarded/meas_agg_month_discarded", yearofreport, monthofreport, ".csv",sep="_")
+write_csv(meas_agg_month_discarded,csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/discarded/meas_agg_month_discarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_agg_month_discarded,rdsFileName)
+
+# last 12 months
+csvFileName <- paste("../2 data/2 processed data/discarded/meas_last12months_discarded", yearofreport, monthofreport, ".csv",sep="_")
+write_csv(meas_last12months_discarded, csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/discarded/meas_last12months_discarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_last12months_discarded,rdsFileName)
+
+csvFileName <- paste("../2 data/2 processed data/discarded/meas_agg_last12months_discarded", yearofreport, monthofreport, ".csv",sep="_")
+write_csv(meas_agg_last12months_discarded, csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/discarded/meas_agg_last12months_discarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_agg_last12months_discarded,rdsFileName)
+
+# calendaryear
+csvFileName <- paste("../2 data/2 processed data/discarded/meas_calendaryear_discarded", yearofreport, monthofreport, ".csv",sep="_")
+write_csv(meas_month_discarded,csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/discarded/meas_calendaryear_discarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_calendaryear_discarded,rdsFileName)
+
+csvFileName <- paste("../2 data/2 processed data/discarded/meas_agg_calendaryear_discarded", yearofreport, monthofreport, ".csv",sep="_")
+write_csv(meas_agg_month_discarded,csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/discarded/meas_agg_calendaryear_discarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_agg_calendaryear_discarded,rdsFileName)
+```
+
+Not discarded 
+```{r}
+# month
+csvFileName <- paste("../2 data/2 processed data/cases/meas_month_notdiscarded", yearofreport, monthofreport, ".csv",sep="_")
+write_csv(meas_month_notdiscarded,csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/cases/meas_month_notdiscarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_month_notdiscarded,rdsFileName)
+
+csvFileName <- paste("../2 data/2 processed data/cases/meas_agg_month_notdiscarded", yearofreport, monthofreport, ".csv",sep="_")
+write_csv(meas_agg_month_notdiscarded,csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/cases/meas_agg_month_notdiscarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_agg_month_notdiscarded,rdsFileName)
+
+csvFileName <- paste("../2 data/2 processed data/cases/meas_combined_month_notdiscarded", yearofreport, monthofreport, ".csv",sep="_")
+write_csv(meas_combined_month_notdiscarded,csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/cases/meas_combined_month_notdiscarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_combined_month_notdiscarded,rdsFileName)
+
+
+# last 12 months 
+csvFileName <- paste("../2 data/2 processed data/cases/meas_last12months_notdiscarded", yearofreport, monthofreport, ".csv",sep="_")
+write_csv(meas_last12months_notdiscarded, csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/cases/meas_last12months_notdiscarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_last12months_notdiscarded,rdsFileName)
+
+csvFileName <- paste("../2 data/2 processed data/cases/meas_agg_last12months_notdiscarded", yearofreport, monthofreport, ".csv",sep="_")
+write_csv(meas_agg_last12months_notdiscarded, csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/cases/meas_agg_last12months_notdiscarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_agg_last12months_notdiscarded,rdsFileName)
+
+csvFileName <- paste("../2 data/2 processed data/cases/meas_combined_last12months_notdiscarded", yearofreport, monthofreport, ".csv",sep="_")
+write_csv(meas_combined_last12months_notdiscarded, csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/cases/meas_combined_last12months_notdiscarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_combined_last12months_notdiscarded,rdsFileName)
+
+# calendaryear
+csvFileName <- paste("../2 data/2 processed data/cases/meas_calendaryear_notdiscarded", yearofreport, monthofreport, ".csv",sep="_")
+write_csv(meas_calendaryear_notdiscarded,csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/cases/meas_calendaryear_notdiscarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_calendaryear_notdiscarded,rdsFileName)
+
+csvFileName <- paste("../2 data/2 processed data/cases/meas_agg_calendaryear_notdiscarded", yearofreport, monthofreport, ".csv",sep="_")
+write_csv(meas_agg_calendaryear_notdiscarded,csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/cases/meas_agg_calendaryear_notdiscarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_agg_calendaryear_notdiscarded,rdsFileName)
+
+csvFileName <- paste("../2 data/2 processed data/cases/meas_combined_calendaryear_notdiscarded", yearofreport, monthofreport, ".csv",sep="_")
+write_csv(meas_combined_calendaryear_notdiscarded,csvFileName)
+rdsFileName <- paste("../2 data/2 processed data/cases/meas_combined_calendaryear_notdiscarded", yearofreport, monthofreport, ".rds",sep="_")
+write_rds(meas_combined_calendaryear_notdiscarded,rdsFileName)
+```

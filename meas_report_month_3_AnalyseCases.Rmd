@@ -1,0 +1,241 @@
+---
+title: "meas_report_month_3a_Analyse_cases"
+author: "Robesyn"
+date: "5 January 2018"
+output: html_document
+---
+
+```{r}
+library(knitr)
+library(rmarkdown)
+library(anytime)
+library(tidyverse)
+library(lubridate)
+library(stringr)
+```
+
+# read processed data    
+```{r}
+# REPLACE DATES FILES
+
+meas_combined_month_notdiscarded <- read_rds("../2 data/2 processed data/cases/meas_combined_month_notdiscarded_2018_6_.rds")
+meas_combined_last12months_notdiscarded <- read_rds("../2 data/2 processed data/cases/meas_combined_last12months_notdiscarded_2018_6_.rds")
+meas_combined_calendaryear_notdiscarded <- read_rds("../2 data/2 processed data/cases/meas_combined_calendaryear_notdiscarded_2018_6_.rds") 
+
+meas_last12months_notdiscarded <- read_rds("../2 data/2 processed data/cases/meas_last12months_notdiscarded_2018_6_.rds")
+meas_agg_last12months_notdiscarded <- read_rds("../2 data/2 processed data/cases/meas_agg_last12months_notdiscarded_2018_6_.rds")
+```
+
+# COUNTS
+
+# MONTH
+```{r}
+# total
+(casecount_month_combined <- meas_combined_month_notdiscarded %>% summarize(total = n())  )
+```
+
+```{r}
+# by reportingcountry
+meas_combined_month_notdiscarded %>% count(reportingcountry) %>% arrange(-n) %>%  mutate(perc = round(n/sum(n)*100, 0))
+meas_combined_month_notdiscarded %>% group_by(reportingcountry) %>% summarize(total = n()) %>% arrange(-total) %>%  mutate(perc = round(total/sum(total)*100, 0))
+```
+
+```{r}
+# nr of reporting countries
+(nrcountries_month <- meas_combined_month_notdiscarded %>% group_by(reportingcountry) %>% summarize(total = n()) %>% nrow() )  
+```
+
+```{r}
+# other var
+meas_combined_month_notdiscarded %>% count(classification) %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)) 
+meas_combined_month_notdiscarded %>% count(gender) %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0))
+meas_combined_month_notdiscarded %>% count(outcome) %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)) 
+meas_combined_month_notdiscarded %>% count(hospitalisation) %>% arrange(-n)%>% mutate(perc = round(n/sum(n)*100, 0))
+meas_combined_month_notdiscarded %>% count(complications) %>% arrange(-n)%>% mutate(perc = round(n/sum(n)*100, 0))
+meas_combined_month_notdiscarded %>% count(vaccstatus) %>% arrange(-n)%>% mutate(perc = round(n/sum(n)*100, 0))
+meas_combined_month_notdiscarded %>% count(imported) %>% arrange(-n)  %>% mutate(perc = round(n/sum(n)*100, 0))
+meas_combined_month_notdiscarded %>% count(clustersetting) %>% arrange(-n)%>% mutate(perc = round(n/sum(n)*100, 0))
+```
+
+```{r}
+meas_combined_month_notdiscarded %>% filter(is.na(gender)) %>%  count(reportingcountry, nationalidentifier, gender, age, dateusedforstatisticsyear, dateusedforstatisticsmonth)   # missing gender June 2018
+```
+
+```{r}
+# continuous var
+stem(meas_combined_month_notdiscarded$age) 
+meas_combined_month_notdiscarded %>% ggplot(aes(age)) +
+               geom_histogram()
+```
+
+# note proportion incompletely vaccinated
+A total of 95 per cent of patients were not vaccinated, partially vaccinated or unknown vaccine status. 
+Report proportion for all and for the above 1 separate.
+
+# LAST 12 MONTHS
+
+## combined
+```{r}
+# total
+(casecount_combined_last12months <- meas_combined_last12months_notdiscarded %>% summarize(total = n()) )
+```
+
+```{r}
+# by year and by year-month
+meas_combined_last12months_notdiscarded %>% group_by(dateusedforstatisticsyear,dateusedforstatisticsmonth)  %>% summarize(total = n()) 
+
+# make date
+meas_combined_last12months_notdiscarded %>% mutate (Date = make_date(dateusedforstatisticsyear,dateusedforstatisticsmonth))  %>% select(dateusedforstatisticsmonth, dateusedforstatisticsyear, firstdatemonth)
+
+# epicurve
+meas_combined_last12months_notdiscarded %>% mutate (Date = make_date(dateusedforstatisticsyear,dateusedforstatisticsmonth)) %>%   ggplot(aes(firstdatemonth)) + geom_bar() 
+
+# epicurve by reportingcountry (all)
+meas_combined_last12months_notdiscarded %>% mutate (Date = make_date(dateusedforstatisticsyear,dateusedforstatisticsmonth)) %>%   ggplot(aes(firstdatemonth)) + geom_bar() + facet_wrap(~reportingcountry)
+
+# by reportingcountry
+
+# alphabetically
+meas_combined_last12months_notdiscarded %>% group_by(reportingcountry) %>% summarize(total = n()) %>%  mutate(perc = round(total/sum(total)*100, 0)) #%>% View()
+
+# descending count
+meas_combined_last12months_notdiscarded %>% group_by(reportingcountry) %>% summarize(total = n()) %>% arrange(-total) %>%  mutate(perc = round(total/sum(total)*100, 0)) # Malta = 0 not listed
+
+# top n
+meas_combined_last12months_notdiscarded %>% group_by(reportingcountry) %>% summarize(total = n()) %>% arrange(-total) %>%  mutate(perc = round(total/sum(total)*100, 0)) %>% top_n(6) # Malta = 0 not listed! 
+
+topcountries <- meas_combined_last12months_notdiscarded %>% group_by(reportingcountry) %>% summarize(total = n()) %>% arrange(-total) %>%  mutate(perc = round(total/sum(total)*100, 0)) %>% top_n(6) %>% select(reportingcountry)
+topcountries 
+
+# by reportingcountry and month
+meas_combined_last12months_notdiscarded %>% group_by(reportingcountry, dateusedforstatisticsyear, dateusedforstatisticsmonth) %>% summarize(total = n()) %>% arrange(-total) %>% mutate(perc = round(total/sum(total)*100, 0)) 
+
+# filter one country at a time
+meas_combined_last12months_notdiscarded %>% mutate (Date = make_date(dateusedforstatisticsyear,dateusedforstatisticsmonth)) %>% filter(reportingcountry == "Italy") %>% ggplot(aes(Date)) + geom_bar() + facet_wrap(~ reportingcountry)
+
+# epicurve by reportingcountry (top 3)
+meas_combined_last12months_notdiscarded %>% mutate (Date = make_date(dateusedforstatisticsyear,dateusedforstatisticsmonth)) %>% filter(reportingcountry %in% topcountries$reportingcountry) %>% ggplot(aes(Date)) + geom_bar(fill="darkblue") + facet_wrap(~ reportingcountry) 
+```
+
+```{r}
+# nr of reporting countries
+(nrcountries_last12months <- meas_combined_last12months_notdiscarded %>% group_by(reportingcountry) %>% summarize(total = n()) %>% nrow()  ) # = nr of coutries reporting reporting case based data
+
+# replace by
+meas_combined_last12months_notdiscarded %>% count(n_distinct(reportingcountry))
+```
+
+```{r}
+# other var
+meas_combined_last12months_notdiscarded %>% count(classification) %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)) 
+meas_combined_last12months_notdiscarded %>% count(gender) %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)) 
+meas_combined_last12months_notdiscarded %>% count(outcome) %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)) 
+meas_combined_last12months_notdiscarded %>% count(hospitalisation) %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)) 
+meas_combined_last12months_notdiscarded %>% count(complications) %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)) 
+
+meas_combined_last12months_notdiscarded %>% count(vaccstatus) %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)) 
+1245+31 # 1276
+meas_combined_last12months_notdiscarded %>% count(imported) %>% arrange(-n) %>%  mutate(perc = round(n/sum(n)*100, 0))  
+8316+3332+538 # 12186
+
+meas_combined_last12months_notdiscarded %>% count(reportingcountry) %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)) 
+meas_combined_last12months_notdiscarded %>% count(clustersetting) %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)) 
+```
+
+```{r}
+# continuous
+
+# table for EIW
+meas_combined_last12months_notdiscarded %>% count(age) 
+meas_combined_last12months_notdiscarded %>% count(age)  %>% write_csv("age_distribution_measles_casebased_2017.csv")
+```
+
+```{r}
+stem(meas_combined_last12months_notdiscarded$age) 
+```
+
+```{r}
+(table_last12months_known_age <- meas_combined_last12months_notdiscarded %>% count(!is.na(age) | !is.na(agemonth) | !is.na(ageclass)) )   
+(nr_last12months_known_age <- table_last12months_known_age[2,2] )
+```
+
+```{r}
+meas_combined_last12months_notdiscarded %>% filter(is.na(age) & is.na(agemonth)) %>% count(reportingcountry)
+meas_combined_last12months_notdiscarded %>% filter(is.na(age) & is.na(agemonth) & is.na(ageclass) ) %>% select(reportingcountry, nationalidentifier, age, agemonth, ageclass)  
+```
+
+```{r}
+(table_underfive_last12months_known_age <- meas_combined_last12months_notdiscarded %>% filter(!is.na(age) | !is.na(agemonth) | !is.na(ageclass)) %>% count(age<5 | ageclass == "00-01" | ageclass == "01-04") %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)))
+
+(underfive_last12months_known_age <- table_underfive_last12months_known_age[2,2] )
+(percent_underfive_last12months_known_age <- table_underfive_last12months_known_age[2,3] )
+```
+
+```{r, include = F}
+(table_overfifteen_last12months_known_age <- meas_combined_last12months_notdiscarded %>% filter(!is.na(age) | !is.na(agemonth) | !is.na(ageclass)) %>% count(age>14 | ageclass == "15-19" | ageclass == "20-24" | ageclass == "25-29" | ageclass == "30+") %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)))
+
+(overfifteen_last12months_known_age <- table_overfifteen_last12months_known_age[1,2] )
+(percent_overfifteen_last12months_known_age <- table_overfifteen_last12months_known_age[1,3] )
+```
+
+```{r}
+meas_combined_last12months_notdiscarded %>% count(ageclass)
+```
+
+```{r}
+meas_combined_last12months_notdiscarded %>% filter(age != "117") %>% 
+               ggplot(aes(age)) +
+               geom_histogram()
+
+
+meas_combined_last12months_notdiscarded %>% ggplot(aes(age)) +
+               geom_histogram()
+```
+
+# imported
+```{r}
+meas_combined_last12months_notdiscarded %>% count(imported) %>% arrange(-n) %>%  mutate(perc = round(n/sum(n)*100, 0))  
+
+# cases with importation NA
+meas_combined_last12months_notdiscarded %>% filter(is.na(imported)) 
+
+# cases with known importation status
+meas_combined_last12months_notdiscarded %>% filter(!is.na(imported)) %>% count(n_distinct(reportingcountry))
+```
+```{r}
+meas_combined_last12months_notdiscarded %>% filter(!is.na(imported)) %>% count(imported) %>% arrange(-n) %>%  mutate(perc = round(n/sum(n)*100, 0))  
+```
+
+# age
+```{r}
+meas_combined_last12months_notdiscarded %>% filter(!is.na(age)) %>% select(age, agemonth) 
+meas_combined_last12months_notdiscarded %>% count(ageclass)
+meas_combined_last12months_notdiscarded %>% count(age) %>% arrange(-n) %>%  mutate(perc = round(n/sum(n)*100, 0)) %>% View()
+```
+
+```{r}
+glimpse(meas_combined_last12months_notdiscarded)
+meas_combined_last12months_notdiscarded %>% filter(is.na(age) & is.na(ageclass))    
+```
+
+```{r}
+meas_combined_last12months_notdiscarded %>% filter(!is.na(age) | !is.na(ageclass)) %>% count(age < 5 | ageclass == "00-01" | ageclass == "01-05") %>% arrange(-n) %>%  mutate(perc = round(n/sum(n)*100, 0))
+```
+```{r}
+meas_combined_last12months_notdiscarded %>% filter(!is.na(age) | !is.na(ageclass)) %>% count(age < 5)                                               # 3757
+meas_combined_last12months_notdiscarded %>% filter(!is.na(age) | !is.na(ageclass)) %>% count(age < 5 | ageclass == "00-01")                         # 3766
+meas_combined_last12months_notdiscarded %>% filter(!is.na(age) | !is.na(ageclass)) %>% count(age < 5 | ageclass == "00-01" | ageclass == "01-04")   # 3781
+meas_combined_last12months_notdiscarded %>% filter(!is.na(age) | !is.na(ageclass)) %>% count(age < 5 | ageclass == "00-01" | ageclass == "01-04") %>% arrange(-n) %>%  mutate(perc = round(n/sum(n)*100, 0))
+```
+
+```{r}
+meas_combined_last12months_notdiscarded %>% filter(!is.na(age) | !is.na(ageclass)) %>% 
+               count(
+                              age >= 15 | 
+                                             ageclass == "15-19" |
+                                             ageclass == "20-24" |
+                                             ageclass == "25-29" |
+                                             ageclass == "30+"
+                                             ) %>% arrange(-n) %>%  mutate(perc = round(n/sum(n)*100, 0))
+```
+

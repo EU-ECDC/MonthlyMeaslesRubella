@@ -1,0 +1,309 @@
+---
+title: "Monthly measles and rubella monitoring report"
+author: "ECDC, Surveillace report"
+date: "August 2018"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r, include=F}
+library(knitr)
+library(rmarkdown)
+library(anytime)
+library(tidyverse)
+library(lubridate)
+library(stringr)
+```
+
+```{r, include = F}
+# REPLACE DATES FILES
+
+meas_combined_month_notdiscarded <- read_rds("../2 data/2 processed data/cases/meas_combined_month_notdiscarded_2018_6_.rds")
+meas_combined_last12months_notdiscarded <- read_rds("../2 data/2 processed data/cases/meas_combined_last12months_notdiscarded_2018_6_.rds")
+meas_combined_calendaryear_notdiscarded <- read_rds("../2 data/2 processed data/cases/meas_combined_calendaryear_notdiscarded_2018_6_.rds") 
+
+meas_last12months_notdiscarded <- read_rds("../2 data/2 processed data/cases/meas_last12months_notdiscarded_2018_6_.rds")
+meas_agg_last12months_notdiscarded <- read_rds("../2 data/2 processed data/cases/meas_agg_last12months_notdiscarded_2018_6_.rds")
+```
+
+```{r, include = FALSE}
+yearofreport <- 2018
+monthofreport <- 6  # month of cases we report about (not month that report is made)
+```
+
+```{r include = F}
+nrcountries_month <- meas_combined_month_notdiscarded %>% group_by(reportingcountry) %>% summarize(total = n()) %>% nrow()
+```
+
+```{r include = F}
+# total
+(casecount_month_combined <- meas_combined_month_notdiscarded %>% summarize(total = n())  )
+casecount_month_combined
+```
+
+# Measles
+Every month, ECDC reports on European measles and rubella surveillance data. Thirty European Union and European Economic Area (EU/EEA) countries routinely submit data to The European Surveillance System (TESSy). This month's report is based on disease surveillance data reported for the period between 1 July 2017 and 30 June 2018. ECDC also monitors European measles outbreaks through epidemic intelligence and publishes the most recent updates once a month in the Communicable Disease Threats Report (CDTR) [ ].
+
+Additionally, ECDC conducts assessments as outbreaks or public health events develop. The last ECDC Rapid Risk Assessment on the risk of measles transmission in the EU/EEA was published in March 2018 [ ].
+
+## `r monthofreport`th month `r yearofreport`
+
+`r nrcountries_month` EU/EEA countries reported a total of `r casecount_month_combined` cases of measles for `r monthofreport` `r yearofreport` (source: TESSy). 
+
+```{r, echo=F}
+meas_combined_month_notdiscarded %>% group_by(reportingcountry) %>% summarize(total = n()) %>% arrange(-total) %>%  mutate(perc = round(total/sum(total)*100, 0))
+```
+
+X continued to report high case counts but with a decreasing trend. A new increase was observed in X. X did not report data for June 2018. The number of cases by country for June 2018 is presented in Figure 1. 
+
+X reported Y cases for June 2018, a decrease from the Y and Y cases reported for May and April 2018, respectively. The most recent updates on this outbreak are available from Z and in the CDTR [1] of 10 August 2018.
+
+For June 2018, X reported Y cases, which was a decrease from Y and Y cases (including Y death) reported for May and April 2018 respectively. For more information on this outbreak, see the most recent updates from Z and the CDTR [1] of 10 August 2018.
+
+X reported Y cases for June 2018, a decrease from Y cases reported for May 2018 and Y cases (including Y death) for April 2018. The most recent updates on this outbreak are available from Z and in the CDTR [1] of 10 August 2018.
+
+Y cases were reported by X for June 2018, compared with Y cases for May and Y cases for April 2018. More information on the situation is available from Z and the CDTR [1] of 10 August 2018.
+
+X reported Y cases for June 2018, a decrease from Y (May 2018) and Y cases (April 2018). 
+
+X reported Y cases for June 2018, a sharp increase from Y and Y cases reported for May and April 2018, respectively. The most recent updates on this outbreak are available from Z and in the CDTR [1] of 10 August 2018. Measles outbreaks are also ongoing in other EU/EEA countries [1].
+
+### Figure 1 Number of measles cases by country, EU/EEA, June 2018 (n=`r casecount_month_combined`)
+
+![](../webupdate/EMMO_NumberOfCases_LastMonth_MEAS.png)
+
+
+
+```{r, include = F}
+(monthofreport)
+(yearofreport)
+
+(firstmonth_last12months <- monthofreport+1)
+(lastyear <- yearofreport-1)
+```
+
+## `r firstmonth_last12months`th month `r lastyear` - `r monthofreport`th month `r yearofreport`
+
+```{r, include = F}
+(nrcountries_last12months <- meas_combined_last12months_notdiscarded %>% group_by(reportingcountry) %>% summarize(total = n()) %>% nrow()  ) # = nr of coutries reporting reporting case based data
+
+(casecount_combined_last12months <- meas_combined_last12months_notdiscarded %>% summarize(total = n()) )
+```
+
+Between 1 `r firstmonth_last12months`th month `r lastyear` and 30 `r monthofreport`th month `r yearofreport`, `r nrcountries_last12months`, EU/EEA Member States reported `r casecount_combined_last12months` cases of measles (source: TESSy). Only Malta reported zero cases during this period. The number of measles cases reported to TESSy may be an underestimation, in particular for X. The sustained outbreak in the country has caused delays in case-based reporting to ECDC, and the most up-to-date data are available from Y. ECDC previously published a Rapid Risk Assessment on the X outbreak in March 2017 [ ]. 
+
+```{r, echo = F}
+# descending count
+meas_combined_last12months_notdiscarded %>% group_by(reportingcountry) %>% summarize(total = n()) %>% arrange(-total) %>%  mutate(perc = round(total/sum(total)*100, 0)) # country X = 0 not listed!
+```
+
+During the period from 1 `r firstmonth_last12months`th month `r lastyear` and 30 `r monthofreport`th month `r yearofreport`, `r nrcountries_last12months`, most cases were reported by X (Y), X (Y), X (Y) and X (Y), accounting for Z%, Z%, Z% and Z%, respectively, of all cases reported by EU/EEA countries. 
+
+```{r, include = F}
+(table_lab_confirmed <- meas_combined_last12months_notdiscarded %>% count(classification) %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0))  )
+
+(percent_lab_confirmed <- table_lab_confirmed[1,3] )
+```
+
+The diagnosis of measles was confirmed by positive laboratory results (serology, virus detection or isolation) in `r percent_lab_confirmed` % of all reported cases. The number of cases by month and notification rate per million population by country for this 12-month period are presented in Table 1. Figure 2 shows the notification rates per million population by country for this period.
+
+### Table 1. Number of measles cases by month and notification rate per million population by country, EU/EEA, 1 `r firstmonth_last12months`th month `r lastyear` - 30 `r monthofreport`th month `r yearofreport`
+
+
+### Figure 2. Measles notification rate per million population by country, EU/EEA, 1 `r firstmonth_last12months`th month `r lastyear` - 30 `r monthofreport`th month `r yearofreport`
+
+![](../webupdate/EMMO_Rates_Last12Months_MEAS.png)
+
+```{r, include = F}
+(table_outcome <- meas_combined_last12months_notdiscarded %>% count(outcome) %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)) )
+(deathcount <- table_outcome[3,2])
+```
+
+```{r, echo = F}
+(table_outcome_bycountry <- meas_combined_last12months_notdiscarded %>% filter(outcome == "D") %>% group_by(reportingcountry) %>% count(outcome) %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)) )
+```
+
+`r deathcount` deaths attributable to measles were reported to TESSy during the 12-month period; with Y in X, Y in X, Y in X, and Y in X (Figure 3).
+
+### Figure 3. Number of measles deaths by country, EU/EEA, 1 July 2017 - 30 June 2018 (n=`r deathcount`)
+
+```{r, include = F}
+(nrcountries_12months_knownimportation <- meas_combined_last12months_notdiscarded %>% filter(!is.na(imported)) %>% group_by(reportingcountry) %>% summarize(total = n()) %>% nrow() )
+
+meas_combined_last12months_notdiscarded %>% count(imported) %>% arrange(-n)  %>% mutate(perc = round(n/sum(n)*100, 0))
+(table_importationstatus_known <- meas_combined_last12months_notdiscarded %>% count(!is.na(imported)) %>% arrange(-n)  %>% mutate(perc = round(n/sum(n)*100, 0))  )
+table_importationstatus_known[1,2]
+known_importationstatus <- table_importationstatus_known[1,2]  
+percent_known_importationstatus <- table_importationstatus_known[1,3]
+
+(table_importationstatus_amongknown <- meas_combined_last12months_notdiscarded %>% filter(!is.na(imported)) %>% count(imported) %>% arrange(-n)  %>% mutate(perc = round(n/sum(n)*100, 0))  )
+
+(endemic  <- table_importationstatus_amongknown[1,2] )
+(percent_endemic  <- table_importationstatus_amongknown[1,3] )
+
+(importrelated  <- table_importationstatus_amongknown[2,2] )
+(percent_importrelated  <- table_importationstatus_amongknown[2,3] )
+
+(imported  <- table_importationstatus_amongknown[3,2] )
+(percent_imported  <- table_importationstatus_amongknown[3,3] )
+```
+
+Importation status was reported by `r nrcountries_12months_knownimportation` countries and known for `r known_importationstatus` cases (`r percent_known_importationstatus` %). Among cases with known importation status, endemic (`r percent_endemic` %) were reported to be endemic, `r importrelated` (`r percent_importrelated` %) were import related, and `r imported` (`r importrelated` %) were imported. Cases were classified as imported if there was virological and/or epidemiological evidence of exposure outside the region or country 7–18 days prior to rash onset, while cases were classified as import related if they were locally acquired infections caused by imported virus, as supported by epidemiological and/or virological evidence.
+
+```{r, include = F}
+# to be moved to datacreation combined
+meas_combined_last12months_notdiscarded <- meas_combined_last12months_notdiscarded %>% 
+               mutate(ageclass2 = case_when(
+                              age == 0 | agemonth < 13 ~ "00-01",   # underone
+                              (age >= 1 & age<5) | (agemonth >= 13 & agemonth <25) ~ "01-04",
+                              age >=5 & age<10 ~ "05-09",
+                              age >=10 & age<15 ~ "10-14",
+                              age >=15 & age<20 ~ "15-19",
+                              age >=20 & age<25 ~ "20-24",
+                              age >=25 & age<30 ~ "25-29",
+                              age >=30 ~ "30+",
+                              
+                              !is.na(ageclass) ~ ageclass,
+               
+                              is.na(age) & is.na(agemonth) & is.na(ageclass) ~ "missing"
+               ))
+```
+
+```{r, include = F}
+# to be moved to datacreation combined
+meas_combined_last12months_notdiscarded %>% group_by(ageclass2) %>% count()
+```
+
+```{r, include = F}
+# adapt to use ageclass2
+(table_last12months_known_age <- meas_combined_last12months_notdiscarded %>% count(!is.na(age) & !is.na(agemonth) & !is.na(ageclass)) %>% arrange(-n)  %>% mutate(perc = round(n/sum(n)*100, 0))  )   
+(nr_last12months_known_age <- table_last12months_known_age[1,2] )
+```
+
+```{r, include = F}
+# adapt to use ageclass2
+(table_underfive_last12months_known_age <- meas_combined_last12months_notdiscarded %>% filter(!is.na(age) | !is.na(agemonth) | !is.na(ageclass)) %>% count(age<5 | ageclass == "00-01" | ageclass == "01-04") %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)))
+
+(underfive_last12months_known_age <- table_underfive_last12months_known_age[2,2] )
+(percent_underfive_last12months_known_age <- table_underfive_last12months_known_age[2,3] )
+```
+
+```{r, include = F}
+# adapt to use ageclass2
+(table_overfifteen_last12months_known_age <- meas_combined_last12months_notdiscarded %>% filter(!is.na(age) | !is.na(agemonth) | !is.na(ageclass)) %>% count(age>14 | ageclass == "15-19" | ageclass == "20-24" | ageclass == "25-29" | ageclass == "30+") %>% arrange(-n) %>% mutate(perc = round(n/sum(n)*100, 0)))
+
+(overfifteen_last12months_known_age <- table_overfifteen_last12months_known_age[2,2] )
+(percent_overfifteen_last12months_known_age <- table_overfifteen_last12months_known_age[2,3] )
+```
+
+Of `r nr_last12months_known_age` cases with known age, `r underfive_last12months_known_age` (`r percent_underfive_last12months_known_age` %) were children less than five years of age, while `r overfifteen_last12months_known_age` (`r percent_overfifteen_last12months_known_age` %) were aged 15 years or older. The highest incidence was reported in children below one year of age ( cases per million) and children from 1 to 4 years of age ( cases per million). These data are also published in the ECDC Surveillance Atlas of Infectious Diseases  [ ].
+
+```{r, echo = F}
+meas_combined_last12months_notdiscarded %>% count(vaccstatus) %>% arrange(-n)%>% mutate(perc = round(n/sum(n)*100, 0))
+```
+
+```{r, include = F}
+(unknown_vaccstatus <- meas_combined_last12months_notdiscarded %>% count(vaccstatus) %>% arrange(-n)%>% mutate(perc = round(n/sum(n)*100, 0)) %>% filter(is.na(vaccstatus)) )
+
+(count_unknown_vaccstatus <- unknown_vaccstatus[1,2])
+(perc_unknown_vaccstatus <- unknown_vaccstatus[1,3])
+```
+
+```{r, include = F}
+# unknown vacc status by agegroup
+(unknown_vaccstatus_by_agegroup <- meas_combined_last12months_notdiscarded %>% group_by(ageclass2) %>% count(vaccstatus) %>% mutate(perc = round(n/sum(n)*100, 0)) %>% arrange(-perc) %>% filter(is.na(vaccstatus)) )
+
+(count_unknown_vaccstatus_by_agegroup <- unknown_vaccstatus_by_agegroup[1,3])
+(perc_unknown_vaccstatus_by_agegroup <- unknown_vaccstatus_by_agegroup[1,4])
+```
+
+```{r, include = F}
+(count_known_age_and_vaccstatus <- meas_combined_last12months_notdiscarded %>% filter(
+               (!is.na(age) | !is.na(agemonth) | !is.na(ageclass)) &
+               (!is.na(vaccstatus))
+               ) %>% count()   )
+
+(perc_known_age_and_vaccstatus <- round((count_known_age_and_vaccstatus/ casecount_combined_last12months) * 100, 0) )
+```
+
+```{r, include = F}
+(vaccstatus_among_known_age_and_vaccstatus <- meas_combined_last12months_notdiscarded %>% filter(
+               (!is.na(age) | !is.na(agemonth) | !is.na(ageclass)) &
+               (!is.na(vaccstatus))
+               ) %>% count(vaccstatus) %>% arrange(-n)%>% mutate(perc = round(n/sum(n)*100, 0))  )
+
+(perc_notvacc_vaccstatus_among_known_age_and_vaccstatus <- vaccstatus_among_known_age_and_vaccstatus[1,3] )
+(perc_onedose_vaccstatus_among_known_age_and_vaccstatus <- vaccstatus_among_known_age_and_vaccstatus[2,3] )
+(perc_twoormoredoses_vaccstatus_among_known_age_and_vaccstatus <- vaccstatus_among_known_age_and_vaccstatus[3,3] +  vaccstatus_among_known_age_and_vaccstatus[5,3] + vaccstatus_among_known_age_and_vaccstatus[6,3] )
+(perc_unknowndoses_vaccstatus_among_known_age_and_vaccstatus <- vaccstatus_among_known_age_and_vaccstatus[4,3] )
+```
+
+Of all cases, `r count_unknown_vaccstatus` (`r perc_unknown_vaccstatus`%) had an unknown vaccination status. The proportion of cases with unknown vaccination status was highest in adults aged 30 years and older reaching `r perc_unknown_vaccstatus_by_agegroup` %. Of `r count_known_age_and_vaccstatus` cases (`r perc_known_age_and_vaccstatus`% of all cases) with known age and vaccination status, `r perc_notvacc_vaccstatus_among_known_age_and_vaccstatus`% were unvaccinated, `r perc_onedose_vaccstatus_among_known_age_and_vaccstatus`% were vaccinated with one dose of measles-containing vaccine, `r perc_twoormoredoses_vaccstatus_among_known_age_and_vaccstatus`% were vaccinated with two or more doses, and `r perc_unknowndoses_vaccstatus_among_known_age_and_vaccstatus`% were vaccinated with an unknown number of doses. 
+
+
+```{r, include = F}
+# not vaccinated by agegroup
+(notvaccinated_by_agegroup <- meas_combined_last12months_notdiscarded %>% group_by(ageclass2) %>% count(vaccstatus) %>% mutate(perc = round(n/sum(n)*100,0)) %>% arrange(-perc) %>% filter(vaccstatus == "NOTVACC"))  # reformulate
+
+(count_notvaccinated_by_agegroup <- notvaccinated_by_agegroup[2,3])
+(perc_notvaccinated_by_agegroup <- notvaccinated_by_agegroup[2,4])
+```
+               
+The proportion of unvaccinated cases was highest among children below one year of age (`r perc_notvaccinated_by_agegroup`%), who are too young to have received the first dose of the measles-containing vaccine. Infants below the age of one year are particularly vulnerable to complications of measles and are best protected by herd immunity.
+
+```{r, include=F}
+(vaccstatus_among_one_to_four <- meas_combined_last12months_notdiscarded %>% filter(ageclass2 == "01-04") %>% count(vaccstatus)%>% mutate(perc = round(n/sum(n)*100,0)) %>% arrange(-perc) )
+
+(perc_notvacc_vaccstatus_among_one_to_four <- vaccstatus_among_one_to_four[1,3] )
+(perc_onedose_vaccstatus_among_one_to_four <- vaccstatus_among_one_to_four[2,3] )
+(perc_twoormoredoses_vaccstatus_among_one_to_four <- vaccstatus_among_one_to_four[4,3] )
+(perc_unknowndoses_vaccstatus_among_one_to_four <- vaccstatus_among_one_to_four[5,3] )
+
+(perc_unknown_vaccstatus_among_one_to_four <- vaccstatus_among_one_to_four[3,3] )
+```
+
+Among cases aged one to four years, `r perc_notvacc_vaccstatus_among_one_to_four`% of the cases were unvaccinated, `r perc_onedose_vaccstatus_among_one_to_four`% were vaccinated with one dose, `r perc_twoormoredoses_vaccstatus_among_one_to_four`% with two doses or more, `r perc_unknowndoses_vaccstatus_among_one_to_four`% with an unknown number of doses, and `r perc_unknown_vaccstatus_among_one_to_four`% had an unknown vaccination status. 
+
+Measles continues to spread across Europe because vaccination coverage in many countries is suboptimal. The latest WHO data on national vaccination coverage for the first [ ] and second [ ] doses of measles-containing vaccine are presented in Figure 4. Only four EU/EEA countries reported at least 95% vaccination coverage for both doses of measles-containing vaccine for 2017. If the elimination goal is to be reached, vaccination coverage for children and adults needs to increase in a number of countries because the vaccination coverage for both the first and the second dose must be at least 95% at all subnational levels and in all communities to interrupt measles circulation.
+
+### Figure 4. Vaccination coverage for the first (left panel) and second (right panel) doses of measles-containing vaccine by country, EU/EEA, 2017
+
+
+![](../webupdate/EMMO_VaccCov1Dose_MEAS.png)
+
+![](../webupdate/EMMO_VaccCov2Dose_MEAS.png)
+
+
+
+# Rubella
+
+Between 1 July 2017 and 30 June 2018, X EU/EEA Member States reported a total of Y cases of rubella (source: TESSy). X and X do not report rubella cases to TESSy. X and X did not report data for June 2018; X did not report for March, April, May and June 2018.
+In this 12-month period, the highest number of cases was reported by X (Y), X (Y), X (Y) and X (Y), accounting for Z%, Z%, Z% and Z% of reported cases, respectively. In June 2018, four EU/EEA Member States (X, X, X and X) reported a total of Y cases, Y of which were reported by X. The diagnosis of rubella was confirmed by positive laboratory results in Z% of all reported cases in the 12-month period.
+
+The number of rubella cases by month and notification rate by country for the 12-month period is presented in 
+Table 2; the number of cases by country for June 2018 is shown in Figure 5, and the notification rates per million population by country are shown in Figure 6.
+
+## Table 2. Number of rubella cases by month and notification rate per million population by country, EU/EEA, 1 July 2017 - 30 June 2018
+
+## Figure 5. Number of rubella cases by country, EU/EEA, June 2018 (n=65)
+
+![](../webupdate/EMMO_NumberOfCases_LastMonth_RUBE.png)
+
+Data from Poland were reported in an aggregated format and should be interpreted with caution, as only five cases (1%) were confirmed through laboratory testing during the 12-month period. The highest number of cases in X was observed in children, with Z% of cases in children under five years of age and Z% in children aged five to nine years.
+
+ECDC monitors European rubella outbreaks on a monthly basis through epidemic intelligence. No new rubella outbreaks were detected in the EU/EEA since the last monthly update. Figure 7 shows the latest vaccination coverage data for the first dose of rubella-containing vaccine [ ] by country in the EU/EEA.
+
+## Figure 6. Rubella notification rate per million population by country, EU/EEA, 1 July 2017 - 30 June 2018
+
+![](../webupdate/EMMO_Rates_Last12Months_RUBE.png)
+
+## Figure 7. Vaccination coverage for the first dose of rubella-containing vaccine by country, EU/EEA, 2017
+
+![](../webupdate/EMMO_VaccCov1Dose_RUBE.png)
+
+# References
+
+[CDTR](https://ecdc.europa.eu/en/threats-and-outbreaks/reports-and-data/weekly-threats)
+
